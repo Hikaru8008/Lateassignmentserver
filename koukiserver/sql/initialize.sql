@@ -107,3 +107,12 @@ UPDATE items SET image = 'img/super_rare.png' WHERE item_id = 2;
 UPDATE items SET image = 'img/rare.png' WHERE item_id = 3;
 UPDATE items SET image = 'img/normal.png' WHERE item_id = 4;
 UPDATE items SET image = 'img/junk.png' WHERE item_id = 5;
+
+
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+    user_id INT PRIMARY KEY,
+    stones INT NOT NULL DEFAULT 0
+);
+
+INSERT INTO users (user_id, stones) VALUES (1, 0);

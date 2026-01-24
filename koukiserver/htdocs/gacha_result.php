@@ -1,101 +1,51 @@
 <?php
-require_once __DIR__ . '/db_config.php';
+session_start();
 
-$userId = $_POST['user_id'] ?? null;
-if (!$userId) die("ユーザーIDが指定されていません。");
+$type = (int)($_POST['type'] ?? 0);
+$cost = ($type === 10) ? 50 : 5;
 
-$gachaId = 1;
-$drawCount = 10;
+if ($_SESSION['stone'] < $cost) {
+    $error = "石が足りません";
+} else {
+    $_SESSION['stone'] -= $cost;
+    $results = [];
 
-$sql = "
-    SELECT g.item_id, i.item_name, i.rarity, i.image, g.weight
-    FROM gacha_items g
-    JOIN items i ON g.item_id = i.item_id
-    WHERE g.gacha_id = :gacha_id
-";
-$stmt = $pdo->prepare($sql);
-$stmt->execute(['gacha_id' => $gachaId]);
-$items = $stmt->fetchAll();
-if (!$items) die('ガチャデータがありません');
-
-$totalWeight = array_sum(array_column($items, 'weight'));
-
-$results = [];
-for ($i=0; $i<$drawCount; $i++){
-    $rand = mt_rand(1, $totalWeight);
-    $current = 0;
-    foreach($items as $item){
-        $current += $item['weight'];
-        if($rand <= $current){
-            $results[] = $item;
-            break;
+    for ($i = 0; $i < $type; $i++) {
+        $rand = rand(1, 100);
+        if ($rand <= 5) {
+            $results[] = "神レア";
+        } elseif ($rand <= 30) {
+            $results[] = "レア";
+        } else {
+            $results[] = "ノーマル";
         }
     }
 }
-
-$rarityColors = [
-    '神レア'=>'gold',
-    '超レア'=>'purple',
-    'レア'=>'blue',
-    '普通'=>'gray',
-    'ガラクタ'=>'brown'
-];
 ?>
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <title>ガチャ結果</title>
-<style>
-body { font-family: sans-serif; }
-.item {
-    font-size: 1.2em;
-    margin-bottom: 20px;
-    opacity: 0;
-    transform: rotateX(90deg);
-    transition: all 0.5s ease;
-    display: inline-block;
-    text-align: center;
-}
-.item.show {
-    opacity: 1;
-    transform: rotateX(0deg);
-}
-.item img {
-    border-radius: 8px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.5);
-    width: 100px;
-    display: block;
-    margin: 0 auto 5px;
-}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>ガチャ結果</h1>
+<div class="box">
+    <h2>ガチャ結果</h2>
 
-<div id="results-container">
-<?php if(!empty($results)): ?>
-    <?php foreach($results as $index=>$item): ?>
-        <div class="item" style="color: <?= $rarityColors[$item['rarity']] ?? 'black' ?>;" data-index="<?= $index ?>">
-            <img src="<?= htmlspecialchars($item['image'],ENT_QUOTES) ?>" alt="<?= htmlspecialchars($item['item_name'],ENT_QUOTES) ?>">
-            <?= $index+1 ?>：<?= htmlspecialchars($item['item_name'],ENT_QUOTES) ?> (<?= $item['rarity'] ?>)
-        </div>
-    <?php endforeach; ?>
-<?php else: ?>
-    <p>ガチャ結果はありません。</p>
-<?php endif; ?>
+    <?php if (isset($error)): ?>
+        <p><?= $error ?></p>
+    <?php else: ?>
+        <?php foreach ($results as $r): ?>
+            <p><?= $r ?></p>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <p>残り石：<?= $_SESSION['stone'] ?></p>
+
+    <form action="gacha_form.php" method="get">
+        <button type="submit">戻る</button>
+    </form>
 </div>
-
-<br>
-<a href="gacha_form.php">戻る</a>
-
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-    const items = document.querySelectorAll(".item");
-    items.forEach((item,index)=>{
-        setTimeout(()=>{ item.classList.add("show"); }, index*500);
-    });
-});
-</script>
 </body>
 </html>
